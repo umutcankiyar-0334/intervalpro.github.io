@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Antrenman Pro</title>
+    <meta name="description" content="Profesyonel interval antrenman zamanlayıcısı">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="background-effects">
+        <div class="pulse-ring pulse-ring-1"></div>
+        <div class="pulse-ring pulse-ring-2"></div>
+        <div class="pulse-ring pulse-ring-3"></div>
+        <div class="particles" id="particles"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1><i data-lucide="flame"></i> Interval Pro</h1>
+            <p>Fizyoloji Tabanlı Akıllı Antrenman</p>
+        </header>
+
+        <div class="testing-toggle">
+            <label class="testing-label">
+                <input type="checkbox" id="testingMode">
+                <span><i data-lucide="flask-conical"></i> Test Modu (10x)</span>
+            </label>
+        </div>
+
+        <div class="conditioning-btn" id="conditioningBtnWrapper">
+            <button id="conditioningBtn"><i data-lucide="heart-pulse"></i> Kondisyon Analizi</button>
+        </div>
+
+        <div class="glass-card fade-in" id="inputPanel">
+            <h2 class="section-title"><i data-lucide="settings"></i> Antrenman Ayarları</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Toplam Süre (dk)</label>
+                    <input type="number" class="form-input" id="totalTime" value="20" min="5" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hızlı (sn)</label>
+                    <input type="number" class="form-input" id="fastTime" value="30" min="10" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Yavaş (sn)</label>
+                    <input type="number" class="form-input" id="slowTime" value="30" min="10" max="120">
+                </div>
+            </div>
+            <button class="btn btn-full btn-primary" id="startBtn"><i data-lucide="play"></i> Başlat</button>
+        </div>
+
+        <div class="glass-card scale-in hidden" id="timerPanel">
+            <div class="timer-container">
+                <div class="breath-ring" id="breathRing"></div>
+                <div class="energy-ring" id="energyRing"></div>
+                <div class="timer-circle">
+                    <svg class="progress-ring" width="260" height="260" viewBox="0 0 260 260">
+                        <defs>
+                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" id="gradientStart" stop-color="#f97316" />
+                                <stop offset="100%" id="gradientEnd" stop-color="#ea580c" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="progress-ring-bg" cx="130" cy="130" r="118" stroke-width="10" />
+                        <circle class="progress-ring-glow" id="progressGlow" cx="130" cy="130" r="118"
+                            stroke-width="14" />
+                        <circle class="progress-ring-progress" id="progressCircle" cx="130" cy="130" r="118"
+                            stroke-width="10" />
+                    </svg>
+                    <div class="timer-content">
+                        <div class="timer-phase-icon" id="phaseIcon"><i data-lucide="flame"></i></div>
+                        <div class="timer-time" id="timerTime">00:00</div>
+                        <div class="timer-phase" id="timerPhase">Hazır</div>
+                        <div class="timer-cycle" id="timerCycle"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="motivation-text" id="motivationText">Hazır mısın?</div>
+            <div class="controls" id="timerControls">
+                <button class="btn btn-flex" id="pauseBtn"><i data-lucide="pause"></i> Duraklat</button>
+                <button class="btn btn-danger" id="stopBtn"><i data-lucide="square"></i></button>
+            </div>
+            <div class="controls hidden" id="completedControls">
+                <button class="btn btn-full btn-success" id="newRoundBtn"><i data-lucide="rotate-ccw"></i> Yeni
+                    Tur</button>
+                <button class="btn btn-full btn-secondary" id="settingsBtn"><i data-lucide="settings"></i>
+                    Ayarlar</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Toplam</div>
+                    <div class="stat-value" id="statTotal">20 dk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Döngü</div>
+                    <div class="stat-value" id="statCycles">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Hızlı</div>
+                    <div class="stat-value" id="statFast">30 sn</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Dinlenme</div>
+                    <div class="stat-value" id="statRest">0 sn</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card info-panel" id="infoPanel">
+            <h3><i data-lucide="info"></i> Hesaplanan Değerler</h3>
+            <ul>
+                <li>• <strong id="infoCycles">0</strong> döngü</li>
+                <li>• <strong id="infoRest">0</strong> sn dinlenme/döngü</li>
+                <li>• <span class="text-orange">Yavaş</span> → <span class="text-red">Hızlı</span> → <span
+                        class="text-blue">Dinlenme</span></li>
+            </ul>
+        </div>
+
+        <footer class="footer">
+            <p>Timestamp tabanlı hassas zamanlama</p>
+        </footer>
+    </div>
+
+    <div class="modal-overlay" id="conditioningModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i data-lucide="heart-pulse"></i> Kondisyon Analizi</h2>
+                <button class="modal-close" id="modalClose"><i data-lucide="x"></i></button>
+            </div>
+            <p class="modal-desc">Sakatlık riskini minimuma indirmek için fizyolojik verilerinize göre
+                kişiselleştirilmiş antrenman planı</p>
+
+            <div class="form-group">
+                <label class="form-label">Yaş Aralığı</label>
+                <select class="form-input" id="ageRange">
+                    <option value="18-25">18-25 yaş</option>
+                    <option value="26-35" selected>26-35 yaş</option>
+                    <option value="36-45">36-45 yaş</option>
+                    <option value="46-55">46-55 yaş</option>
+                    <option value="56+">56+ yaş</option>
+                </select>
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">Haftalık Aktivite Günü</label>
+                <input type="range" class="range-input" id="weeklyActivity" min="0" max="7" value="3">
+                <div class="range-value"><span id="weeklyActivityValue">3</span> gün</div>
+            </div>
+
+            <div class="range-group">
+                <label class="form-label">Mevcut Kondisyon Seviyesi</label>
+                <input type="range" class="range-input" id="fitnessLevel" min="1" max="5" value="3">
+                <div class="range-labels">
+                    <span>Başlangıç</span><span>Orta</span><span>İleri</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Hedef Antrenman Süresi (dk)</label>
+                <input type="number" class="form-input" id="targetDuration" value="20" min="10" max="60">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label checkbox-label">
+                    <input type="checkbox" id="hasInjury">
+                    <span>Geçmiş veya mevcut sakatlık var</span>
+                </label>
+            </div>
+
+            <div class="suggestions-box">
+                <h3><i data-lucide="shield-check"></i> Güvenli Antrenman Planı</h3>
+                <div class="risk-level" id="riskLevel">
+                    <span class="risk-badge risk-low">Düşük Risk</span>
+                </div>
+                <div class="suggestions-grid">
+                    <div>
+                        <div class="label">Toplam</div>
+                        <div class="value" id="suggestedTotal">20 dk</div>
+                    </div>
+                    <div>
+                        <div class="label">Hızlı</div>
+                        <div class="value" id="suggestedFast">30 sn</div>
+                    </div>
+                    <div>
+                        <div class="label">Yavaş</div>
+                        <div class="value" id="suggestedSlow">30 sn</div>
+                    </div>
+                </div>
+                <p class="suggestion-note" id="suggestionNote">Kondisyon seviyenize uygun güvenli değerler</p>
+            </div>
+
+            <button class="btn btn-full btn-primary" id="applyBtn"><i data-lucide="check"></i> Uygula</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
