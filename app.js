@@ -5,7 +5,6 @@ const elements = {
     totalTime: $('totalTime'),
     fastTime: $('fastTime'),
     slowTime: $('slowTime'),
-    testingMode: $('testingMode'),
     inputPanel: $('inputPanel'),
     timerPanel: $('timerPanel'),
     infoPanel: $('infoPanel'),
@@ -47,7 +46,11 @@ const elements = {
     suggestionNote: $('suggestionNote'),
     riskLevel: $('riskLevel'),
     applyBtn: $('applyBtn'),
-    particles: $('particles')
+    particles: $('particles'),
+    calorieTip: $('calorieTip'),
+    recoveryTip: $('recoveryTip'),
+    progressTip: $('progressTip'),
+    tipsBox: $('tipsBox')
 };
 
 // ===== CONSTANTS =====
@@ -124,7 +127,7 @@ function calculateCycleInfo() {
     for (let c = 1; c <= 50; c++) {
         const remaining = totalSec - c * cycleActive;
         const rest = remaining / c;
-        if (rest >= 5) { bestCycles = c; bestRest = rest; } 
+        if (rest >= 5) { bestCycles = c; bestRest = rest; }
         else break;
     }
     return { cycleCount: bestCycles, restTime: bestRest };
@@ -155,25 +158,25 @@ function calculateSafeSuggestions() {
     const fitness = parseInt(elements.fitnessLevel.value);
     const target = parseInt(elements.targetDuration.value) || 20;
     const hasInjury = elements.hasInjury.checked;
-    
+
     // Age factor (younger = can handle more intensity)
     const ageFactor = { '18-25': 1.2, '26-35': 1.0, '36-45': 0.85, '46-55': 0.7, '56+': 0.55 }[age] || 1;
-    
+
     // Activity factor
     const activityFactor = 0.5 + (activity / 7) * 0.5;
-    
+
     // Fitness multiplier
     const fitnessMult = 0.6 + (fitness / 5) * 0.4;
-    
+
     // Injury penalty
     const injuryMult = hasInjury ? 0.6 : 1;
-    
+
     // Combined score
     const score = ageFactor * activityFactor * fitnessMult * injuryMult;
-    
+
     // Calculate safe values
     let fastTime, slowTime, totalTime, risk, note;
-    
+
     if (score < 0.4) {
         // Very low - beginner/recovery mode
         fastTime = 15;
@@ -210,15 +213,67 @@ function calculateSafeSuggestions() {
         risk = 'low';
         note = 'Mükemmel kondisyon! Maksimum performans moduna geçebilirsiniz.';
     }
-    
+
     // Injury override
     if (hasInjury) {
         fastTime = Math.max(15, fastTime - 10);
         slowTime = Math.min(60, slowTime + 15);
         note = '⚠️ Sakatlık geçmişi nedeniyle daha güvenli değerler önerildi.';
     }
-    
+
     return { totalTime, fastTime, slowTime, risk, note };
+}
+
+// ===== WELLNESS TIPS =====
+function generateWellnessTips() {
+    const age = elements.ageRange.value;
+    const activity = parseInt(elements.weeklyActivity.value);
+    const fitness = parseInt(elements.fitnessLevel.value);
+    const target = parseInt(elements.targetDuration.value) || 20;
+    const hasInjury = elements.hasInjury.checked;
+
+    // Tahmini kalori hesaplama (yaklaşık değerler)
+    // HIIT için ortalama 8-12 kcal/dk, kondisyona göre ayarlanır
+    const baseCalorieRate = 8 + (fitness * 0.8);
+    const ageMultiplier = { '18-25': 1.1, '26-35': 1.0, '36-45': 0.95, '46-55': 0.9, '56+': 0.85 }[age] || 1;
+    const estimatedCalories = Math.round(target * baseCalorieRate * ageMultiplier);
+    const calorieRange = Math.round(estimatedCalories * 0.15);
+
+    elements.calorieTip.innerHTML = `🔥 <strong>Tahmini yakım:</strong> ${estimatedCalories - calorieRange}-${estimatedCalories + calorieRange} kcal`;
+
+    // Toparlanma tavsiyesi
+    const recoveryTips = [];
+    if (fitness <= 2) {
+        recoveryTips.push('Antrenman sonrası 1 muz veya hurma kas toparlanmasına yardımcı olur');
+        recoveryTips.push('Bol su için, en az 500ml');
+        recoveryTips.push('48 saat dinlenme önerilir');
+    } else if (fitness <= 4) {
+        recoveryTips.push('Protein içeren bir atıştırmalık (yoğurt, yumurta) faydalı olabilir');
+        recoveryTips.push('15 dk germe hareketi toparlanmayı hızlandırır');
+        recoveryTips.push('Yarın hafif tempo yapabilirsiniz');
+    } else {
+        recoveryTips.push('Elektrolit takviyesi (muz + tuz) performansı korur');
+        recoveryTips.push('Soğuk duş kan dolaşımını artırır');
+        recoveryTips.push('Yarın aynı yoğunlukta devam edebilirsiniz');
+    }
+
+    if (hasInjury) {
+        recoveryTips.unshift('Sakatlık bölgesine buz uygulayın');
+    }
+
+    const randomRecovery = recoveryTips[Math.floor(Math.random() * Math.min(2, recoveryTips.length))];
+    elements.recoveryTip.innerHTML = `🍌 <strong>Toparlanma:</strong> ${randomRecovery}`;
+
+    // İlerleme tavsiyesi
+    let progressAdvice = '';
+    if (activity < 3) {
+        progressAdvice = `Haftaya ${activity + 1} güne çıkarsanız 2-3 haftada fark hissedersiniz`;
+    } else if (fitness < 4) {
+        progressAdvice = `Bu tempoda 3-4 hafta devam edin, ardından süreyi %10 artırabilirsiniz`;
+    } else {
+        progressAdvice = `Sprint sürelerini 5sn artırmayı deneyebilirsiniz`;
+    }
+    elements.progressTip.innerHTML = `📈 <strong>Gelişim:</strong> ${progressAdvice}`;
 }
 
 // ===== UI UPDATES =====
@@ -238,7 +293,7 @@ function updateTimerDisplay() {
     const sec = Math.floor(state.timeRemaining % 60);
     elements.timerTime.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     elements.timerPhase.textContent = PHASE_NAMES[state.phase];
-    elements.timerCycle.textContent = state.phase !== PHASES.IDLE && state.phase !== PHASES.COMPLETED 
+    elements.timerCycle.textContent = state.phase !== PHASES.IDLE && state.phase !== PHASES.COMPLETED
         ? `Döngü ${state.currentCycle} / ${state.totalCycles}` : '';
     elements.phaseIcon.innerHTML = `<i data-lucide="${PHASE_ICONS[state.phase]}"></i>`;
     lucide.createIcons();
@@ -250,7 +305,7 @@ function updateProgressRing() {
     elements.progressCircle.style.strokeDashoffset = offset;
     elements.progressGlow.style.strokeDasharray = CIRCUMFERENCE;
     elements.progressGlow.style.strokeDashoffset = offset;
-    
+
     const colors = {
         [PHASES.HIZLI]: ['#ef4444', '#dc2626', 'rgba(239, 68, 68, 0.3)'],
         [PHASES.YAVAS]: ['#f97316', '#ea580c', 'rgba(249, 115, 22, 0.3)'],
@@ -297,34 +352,32 @@ function showCompleted() {
 }
 
 function updatePauseButton() {
-    elements.pauseBtn.innerHTML = state.isPaused 
-        ? '<i data-lucide="play"></i> Devam' 
+    elements.pauseBtn.innerHTML = state.isPaused
+        ? '<i data-lucide="play"></i> Devam'
         : '<i data-lucide="pause"></i> Duraklat';
     lucide.createIcons();
 }
 
-// ===== TIMER LOOP =====
 function timerLoop() {
     if (!state.isRunning || state.isPaused) return;
-    
-    const mult = elements.testingMode.checked ? 10 : 1;
-    const elapsed = ((Date.now() - phaseStartTime) / 1000) * mult;
+
+    const elapsed = (Date.now() - phaseStartTime) / 1000;
     const duration = getPhaseDuration(state.phase);
     const remaining = Math.max(0, duration - elapsed);
-    
+
     const sec = Math.ceil(remaining);
     if (sec <= 5 && sec > 0 && sec !== lastCountdownSec) {
         lastCountdownSec = sec;
         playCountdownBeep();
     }
-    
+
     state.timeRemaining = remaining;
     state.progress = duration > 0 ? (remaining / duration) * 100 : 0;
-    
+
     if (remaining <= 0) {
         const next = getNextPhase(state.phase, state.currentCycle);
         playTransitionBeep();
-        
+
         if (next === PHASES.COMPLETED) {
             playCompletionSound();
             state.phase = PHASES.COMPLETED;
@@ -338,19 +391,19 @@ function timerLoop() {
             showCompleted();
             return;
         }
-        
+
         if (next === PHASES.YAVAS && state.phase === PHASES.DINLENME) state.currentCycle++;
-        
+
         state.phase = next;
         state.timeRemaining = getPhaseDuration(next);
         state.progress = 100;
         phaseStartTime = Date.now();
         lastCountdownSec = -1;
-        
+
         updateBodyBackground();
         updateMotivation();
     }
-    
+
     updateTimerDisplay();
     updateProgressRing();
     animationFrameId = requestAnimationFrame(timerLoop);
@@ -360,7 +413,7 @@ function timerLoop() {
 function handleStart() {
     const { cycleCount } = calculateCycleInfo();
     const firstPhase = PHASES.YAVAS;
-    
+
     state = {
         phase: firstPhase,
         timeRemaining: getPhaseDuration(firstPhase),
@@ -370,17 +423,17 @@ function handleStart() {
         isPaused: false,
         progress: 100
     };
-    
+
     phaseStartTime = Date.now();
     lastCountdownSec = -1;
-    
+
     updateInfoDisplay();
     showTimer();
     updateTimerDisplay();
     updateProgressRing();
     updateBodyBackground();
     updateMotivation();
-    
+
     playTransitionBeep();
     animationFrameId = requestAnimationFrame(timerLoop);
 }
@@ -413,12 +466,16 @@ function updateSuggestions() {
     elements.suggestedFast.textContent = `${s.fastTime} sn`;
     elements.suggestedSlow.textContent = `${s.slowTime} sn`;
     elements.suggestionNote.textContent = s.note;
-    
+
     const badges = { low: 'Düşük Risk', medium: 'Orta Risk', high: 'Yüksek Risk' };
     elements.riskLevel.innerHTML = `<span class="risk-badge risk-${s.risk}">${badges[s.risk]}</span>`;
 }
 
-function openModal() { elements.conditioningModal.classList.add('active'); updateSuggestions(); }
+function openModal() {
+    elements.conditioningModal.classList.add('active');
+    updateSuggestions();
+    generateWellnessTips();
+}
 function closeModal() { elements.conditioningModal.classList.remove('active'); }
 
 function applySettings() {
@@ -441,11 +498,11 @@ elements.modalClose.addEventListener('click', closeModal);
 elements.applyBtn.addEventListener('click', applySettings);
 elements.conditioningModal.addEventListener('click', e => { if (e.target === elements.conditioningModal) closeModal(); });
 
-elements.weeklyActivity.addEventListener('input', () => { elements.weeklyActivityValue.textContent = elements.weeklyActivity.value; updateSuggestions(); });
-elements.ageRange.addEventListener('change', updateSuggestions);
-elements.fitnessLevel.addEventListener('input', updateSuggestions);
-elements.targetDuration.addEventListener('input', updateSuggestions);
-elements.hasInjury.addEventListener('change', updateSuggestions);
+elements.weeklyActivity.addEventListener('input', () => { elements.weeklyActivityValue.textContent = elements.weeklyActivity.value; updateSuggestions(); generateWellnessTips(); });
+elements.ageRange.addEventListener('change', () => { updateSuggestions(); generateWellnessTips(); });
+elements.fitnessLevel.addEventListener('input', () => { updateSuggestions(); generateWellnessTips(); });
+elements.targetDuration.addEventListener('input', () => { updateSuggestions(); generateWellnessTips(); });
+elements.hasInjury.addEventListener('change', () => { updateSuggestions(); generateWellnessTips(); });
 
 elements.totalTime.addEventListener('input', updateInfoDisplay);
 elements.fastTime.addEventListener('input', updateInfoDisplay);
